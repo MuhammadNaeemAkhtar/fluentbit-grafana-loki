@@ -1,0 +1,30 @@
+## eksctl create cluster --name grafana-loki
+
+CLUSTER_NAME="grafana-loki"
+
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r '.Account')
+REGION="eu-west-1"
+eksctl create cluster --name=${CLUSTER_NAME} --nodes-min=1 --nodes-max=2 --node-type=t2.small   
+
+----- Create Bucket and change name in loki.yml config map ------------
+kubectl create configmap datasource --from-file=datasource.yml 
+kubectl create configmap lokicm --from-file=loki-config.yml
+
+kubectl create -f grafana.yaml
+kubectl create -f loki.yaml
+kubectl get pods -w
+kubectl get nodes -o wide   ----for external IP (52.210.61.196)
+kubectl get svc             ----for port (32250)
+
+aws ec2 describe-security-groups --filters Name=group-name,Values="*eksctl-grafana-loki-nodegroup*"  --query "SecurityGroups[*].{Name:GroupName,ID:GroupId}"
+aws ec2 authorize-security-group-ingress --protocol tcp --port 32250 --group-id sg-0fa55f --cidr 0.0.0.0/0
+
+Go to ---->> externalIP:port (GRAFANA)
+To Test Loki 
+---------------- To send logs to loki using command line to debug ----------------
+curl http://acc2b715365cb4782a82fe61eb00b4a0-348600423.eu-west-1.elb.amazonaws.com:3100/ready
+curl -X POST http://acc2b715365cb4782a82fe61eb00b4a0-348600423.eu-west-1.elb.amazonaws.com:3100/loki/api/v1/push -H "Content-Type: application/json" --data-raw '{"streams": [{ "stream": { "foo": "bar" }, "values": [ [ "16276869000000", "example4" ] ] }]}' -v
+
+----->>>> For timestamp https://currentmillis.com/
+
+eksctl delete cluster --name ${CLUSTER_NAME}
