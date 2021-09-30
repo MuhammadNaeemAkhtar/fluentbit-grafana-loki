@@ -33,16 +33,18 @@ spec:
               name: http-loki
               protocol: TCP
           imagePullPolicy: IfNotPresent
+          args:
+            - "-config.file=/etc/loki/loki-config.yaml"
           volumeMounts:
-            - mountPath: tmp/loki
-              name: loki-pv
-            - mountPath: /mnt/loki-local-config
-              name: loki-cm			  
+            - name: config
+              mountPath: /etc/loki
+            - name: storage
+              mountPath: /data	  
       volumes:
-        - name: loki-pv
+        - name: storage
           persistentVolumeClaim:
             claimName: loki-pvc
-        - name: loki-cm
+        - name: config
           configMap:
             name: lokicm
 ---

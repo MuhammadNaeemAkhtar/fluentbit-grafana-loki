@@ -1,0 +1,64 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  log_level: warn
+
+ingester:
+  lifecycler:    
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 5m
+  chunk_retain_period: 30s
+  # max_transfer_retries: 0
+
+schema_config:
+  configs:
+    - from: 2021-07-01
+      store: boltdb-shipper
+      object_store: s3
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+
+compactor:
+  working_directory: /loki/boltdb-shipper-compactor
+  shared_store: s3
+
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /loki/boltdb-shipper-active # /data/loki/boltdb-shipper-active
+    cache_location: /loki/boltdb-shipper-cache   # /data/loki/boltdb-shipper-cache
+    # cache_ttl: 24h
+    shared_store: s3
+  aws:
+    s3: s3://<access_key_id>:<secret_access_key>@eu-west-1/lokiaccess
+    # s3: s3://eu-west-1/dev-storm-loki-storage
+    # endpoint: 'https://s3.eu-west-1.amazonaws.com'
+    # region: 'eu-west-1'
+    # s3forcepathstyle: true
+    # sse_encryption: true
+    # bucketnames: 'dev-storm-loki-storage'
+  # dynamodb:
+  #   dynamodb_url: dynamodb://<access_key_id>:<secret_access_key>@eu-west-1
+  # boltdb_shipper:
+  #   active_index_directory: '/data/loki/boltdb-shipper-active'
+  #   cache_location: '/data/loki/boltdb-shipper-cache'
+  #   cache_ttl: 24h         # Can be increased for faster performance over longer query periods, uses more disk space
+  #   shared_store: s3
+
+limits_config:
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+
+chunk_store_config:
+  max_look_back_period: 0s
+
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 336h
